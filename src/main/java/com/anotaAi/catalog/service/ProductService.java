@@ -50,17 +50,4 @@ public class ProductService {
         productRepository.deleteById(id);
         kafkaPublishService.sendMessage(product.getOwnerId(), "catalog-emit");
     }
-
-    public List<ProductDto> getAllProductsFromACategory(String id) {
-        List<Product> products = productRepository.findByCategoryId(id);
-        return products.stream().map(product -> new ProductDto(product.getTitle(),
-                product.getDescription(),
-                product.getOwnerId(),
-                product.getPrice(),
-                product.getCategoryId())).collect(Collectors.toList());
-    }
-
-    public List<Product> getProductsByOwnerId(String ownerId) {
-        return productRepository.findProductsByOwnerId(ownerId);
-    }
 }

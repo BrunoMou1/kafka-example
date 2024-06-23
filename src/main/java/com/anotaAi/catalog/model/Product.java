@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 public class Product {
     @Id
+    private String id;
     private String title;
     private String description;
     private Double price;
