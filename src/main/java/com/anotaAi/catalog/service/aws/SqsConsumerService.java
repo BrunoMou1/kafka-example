@@ -1,42 +1,34 @@
 package com.anotaAi.catalog.service.aws;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.anotaAi.catalog.service.CatalogService;
-import jakarta.annotation.PostConstruct;
+import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class SqsConsumerService {
 
-    private final AmazonSQS amazonSQSClient;
     private final CatalogService catalogService;
+
+    private static final Logger logger = LoggerFactory.getLogger(CatalogService.class);
+
 
     @Value("${cloud.aws.sqs.url}")
     private String sqsUrl;
 
-    @PostConstruct
-    private void init() {
-        Runnable sqsListener = () -> {
-            while (true) {
-                ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(sqsUrl)
-                        .withMaxNumberOfMessages(10);
-                List<Message> messages = amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages();
-
-                for (Message message : messages) {
-                    String ownerId = message.getBody();
-                    catalogService.generateCatalogForOwner(ownerId);
-                }
-            }
-        };
-        Thread listenerThread = new Thread(sqsListener);
-        listenerThread.start();
+    @SqsListener(value = "catalog-queue")
+    public void receiveMessage(String messageBody) {
+        try {
+            catalogService.generateCatalogForOwner(messageBody);
+        } catch (Exception e) {
+            logger.error("Error processing message for ownerId: " + messageBody, e);
+            throw e;
+        }
     }
 
 }
